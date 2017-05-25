@@ -39,6 +39,7 @@
 #include <ros/callback_queue.h>
 
 #include "robotis_controller/robotis_controller.h"
+#include "robotis_controller/joint_handle.h"
 
 using namespace robotis_framework;
 
