@@ -28,13 +28,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
 
-/*
- * robotis_controller.h
- *
- *  Created on: 2016. 1. 15.
- *      Author: zerom
- */
-
 #ifndef ROBOTIS_CONTROLLER_ROBOTIS_CONTROLLER_H_
 #define ROBOTIS_CONTROLLER_ROBOTIS_CONTROLLER_H_
 
@@ -57,8 +50,11 @@
 #include "dynamixel_sdk/group_bulk_read.h"
 #include "dynamixel_sdk/group_sync_write.h"
 
+#include "robotis_controller/joint_handle.h"
+
 namespace robotis_framework
 {
+typedef std::vector<JointHandlePtr> JointHandleList;
 
 enum ControllerMode
 {
@@ -94,6 +90,9 @@ private:
   bool isTimerStopped();
   void initializeSyncWrite();
 
+  /* ROS plugin */
+  JointHandleList   joints_;
+
 public:
   bool              DEBUG_PRINT;
   Robot            *robot_;
@@ -120,9 +119,9 @@ public:
   ros::Publisher  present_joint_state_pub_;
   ros::Publisher  current_module_pub_;
 
-  std::map<std::string, ros::Publisher> gazebo_joint_position_pub_;
-  std::map<std::string, ros::Publisher> gazebo_joint_velocity_pub_;
-  std::map<std::string, ros::Publisher> gazebo_joint_effort_pub_;
+//  std::map<std::string, ros::Publisher> gazebo_joint_position_pub_;
+//  std::map<std::string, ros::Publisher> gazebo_joint_velocity_pub_;
+//  std::map<std::string, ros::Publisher> gazebo_joint_effort_pub_;
 
   static void *timerThread(void *param);
 
@@ -177,6 +176,11 @@ public:
   int     write4Byte  (const std::string joint_name, uint16_t address, uint32_t data, uint8_t *error = 0);
 
   int     regWrite    (const std::string joint_name, uint16_t address, uint16_t length, uint8_t *data, uint8_t *error = 0);
+
+  /* ROS plugin */
+  bool    addJointHandle(JointHandlePtr& j);
+  void    update(const ros::Time& time, const ros::Duration& dt);
+
 };
 
 }

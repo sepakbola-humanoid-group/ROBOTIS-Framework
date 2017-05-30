@@ -28,13 +28,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************/
 
-/*
- * robotis_controller.cpp
- *
- *  Created on: 2016. 1. 15.
- *      Author: zerom
- */
-
 #include <ros/package.h>
 #include <ros/callback_queue.h>
 
@@ -646,18 +639,18 @@ void RobotisController::msgQueueThread()
   current_module_pub_       = ros_node.advertise<robotis_controller_msgs::JointCtrlModule>(
                                                               "/robotis/present_joint_ctrl_modules", 10);
 
-  if (gazebo_mode_ == true)
-  {
-    for (auto& it : robot_->dxls_)
-    {
-      gazebo_joint_position_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_position/command", 1);
-      gazebo_joint_velocity_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_velocity/command", 1);
-      gazebo_joint_effort_pub_[it.first]   = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_effort/command", 1);
-    }
-  }
+//  if (gazebo_mode_ == true)
+//  {
+//    for (auto& it : robot_->dxls_)
+//    {
+//      gazebo_joint_position_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
+//                                                "/" + gazebo_robot_name_ + "/" + it.first + "_position/command", 1);
+//      gazebo_joint_velocity_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
+//                                                "/" + gazebo_robot_name_ + "/" + it.first + "_velocity/command", 1);
+//      gazebo_joint_effort_pub_[it.first]   = ros_node.advertise<std_msgs::Float64>(
+//                                                "/" + gazebo_robot_name_ + "/" + it.first + "_effort/command", 1);
+//    }
+//  }
 
   /* service */
   ros::ServiceServer joint_module_server = ros_node.advertiseService("/robotis/get_present_joint_ctrl_modules",
@@ -713,6 +706,24 @@ void RobotisController::startTimer()
 
   if (this->gazebo_mode_ == true)
   {
+    if (init_pose_loaded_ == false)
+    {
+      for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
+      {
+        auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
+        if (d_it != robot_->dxls_.end())
+        {
+          d_it->second->dxl_state_->present_position_ = (*j)->getPosition();
+          d_it->second->dxl_state_->present_velocity_ = (*j)->getVelocity();
+          d_it->second->dxl_state_->present_torque_ = (*j)->getEffort();
+        }
+      }
+
+      for (auto& it : robot_->dxls_)
+        it.second->dxl_state_->goal_position_ = it.second->dxl_state_->present_position_;
+      init_pose_loaded_ = true;
+    }
+
     // create and start the thread
     gazebo_thread_ = boost::thread(boost::bind(&RobotisController::gazeboTimerThread, this));
   }
@@ -1076,33 +1087,49 @@ void RobotisController::process()
         if ((*module_it)->getModuleEnable() == false)
           continue;
 
-        std_msgs::Float64 joint_msg;
+//        std_msgs::Float64 joint_msg;
 
-        for (auto& dxl_it : robot_->dxls_)
+//        for (auto& dxl_it : robot_->dxls_)
+//        {
+//          std::string     joint_name  = dxl_it.first;
+//          Dynamixel      *dxl         = dxl_it.second;
+//          DynamixelState *dxl_state   = dxl_it.second->dxl_state_;
+
+//          if (dxl->ctrl_module_name_ == (*module_it)->getModuleName())
+//          {
+//            if ((*module_it)->getControlMode() == PositionControl)
+//            {
+////              joint_msg.data = dxl_state->goal_position_;
+////              gazebo_joint_position_pub_[joint_name].publish(joint_msg);
+//            }
+//            else if ((*module_it)->getControlMode() == VelocityControl)
+//            {
+////              joint_msg.data = dxl_state->goal_velocity_;
+////              gazebo_joint_velocity_pub_[joint_name].publish(joint_msg);
+//            }
+//            else if ((*module_it)->getControlMode() == TorqueControl)
+//            {
+////              joint_msg.data = dxl_state->goal_torque_;
+////              gazebo_joint_effort_pub_[joint_name].publish(joint_msg);
+//            }
+//          }
+//        }
+
+//        ROS_INFO("joints_size : %d", (int) joints_.size());
+        for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
         {
-          std::string     joint_name  = dxl_it.first;
-          Dynamixel      *dxl         = dxl_it.second;
-          DynamixelState *dxl_state   = dxl_it.second->dxl_state_;
-
-          if (dxl->ctrl_module_name_ == (*module_it)->getModuleName())
+          auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
+          if (d_it != robot_->dxls_.end())
           {
-            if ((*module_it)->getControlMode() == PositionControl)
-            {
-              joint_msg.data = dxl_state->goal_position_;
-              gazebo_joint_position_pub_[joint_name].publish(joint_msg);
-            }
-            else if ((*module_it)->getControlMode() == VelocityControl)
-            {
-              joint_msg.data = dxl_state->goal_velocity_;
-              gazebo_joint_velocity_pub_[joint_name].publish(joint_msg);
-            }
-            else if ((*module_it)->getControlMode() == TorqueControl)
-            {
-              joint_msg.data = dxl_state->goal_torque_;
-              gazebo_joint_effort_pub_[joint_name].publish(joint_msg);
-            }
+//            ROS_INFO("%s", ((*j)->getName()).c_str());
+            d_it->second->dxl_state_->present_position_ = (*j)->getPosition();
+            d_it->second->dxl_state_->present_velocity_ = (*j)->getVelocity();
+            d_it->second->dxl_state_->present_torque_ = (*j)->getEffort();
           }
         }
+
+//        for (size_t i = 0; i < joints_.size(); ++i)
+//          ROS_INFO("%s : %f", (joints_[i]->getName()).c_str(), joints_[i]->getPosition());
       }
     }
   }
@@ -2424,3 +2451,44 @@ int RobotisController::regWrite(const std::string joint_name, uint16_t address, 
   return pkt_handler->regWriteTxRx(port_handler, dxl->id_, address, length, data, error);
 }
 
+bool RobotisController::addJointHandle(JointHandlePtr& j)
+{
+  // TODO: check for duplicate names?
+  joints_.push_back(j);
+
+//  ROS_INFO("joints_size : %d", (int) joints_.size());
+//  ROS_INFO("%s", (j->getName()).c_str());
+//  ROS_INFO("%s : %f", (j->getName()).c_str(), j->getPosition());
+
+  return true;
+}
+
+void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
+{
+//  if (dxl->ctrl_module_name_ == (*module_it)->getModuleName())
+//  {
+//    if ((*module_it)->getControlMode() == PositionControl)
+//    {
+
+//    }
+//    else if ((*module_it)->getControlMode() == VelocityControl)
+//    {
+
+//    }
+//    else if ((*module_it)->getControlMode() == TorqueControl)
+//    {
+
+//    }
+//  }
+
+  // Write goal value
+  for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
+  {
+    auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
+    if (d_it != robot_->dxls_.end())
+    {
+      (*j)->reset();
+      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
+    }
+  }
+}
