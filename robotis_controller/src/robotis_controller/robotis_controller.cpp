@@ -713,14 +713,27 @@ void RobotisController::startTimer()
         auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
         if (d_it != robot_->dxls_.end())
         {
-          d_it->second->dxl_state_->present_position_ = (*j)->getPosition();
-          d_it->second->dxl_state_->present_velocity_ = (*j)->getVelocity();
-          d_it->second->dxl_state_->present_torque_ = (*j)->getEffort();
+          d_it->second->dxl_state_->present_position_   = 0.0;
+          d_it->second->dxl_state_->present_velocity_   = 0.0;
+          d_it->second->dxl_state_->present_torque_     = 0.0;
+
+//          d_it->second->dxl_state_->present_position_   = (*j)->getPosition();
+//          d_it->second->dxl_state_->present_velocity_   = (*j)->getVelocity();
+//          d_it->second->dxl_state_->present_torque_     = (*j)->getEffort();
+
+          ROS_INFO("%s", ((*j)->getName()).c_str());
+          ROS_INFO("present_position_ : %f" , (*j)->getPosition());
+          ROS_INFO("present_velocity_ : %f" , (*j)->getVelocity());
+          ROS_INFO("present_torque_ : %f"   , (*j)->getEffort());
         }
       }
 
       for (auto& it : robot_->dxls_)
+      {
         it.second->dxl_state_->goal_position_ = it.second->dxl_state_->present_position_;
+        it.second->dxl_state_->goal_velocity_ = it.second->dxl_state_->present_velocity_;
+        it.second->dxl_state_->goal_torque_ = it.second->dxl_state_->present_torque_;
+      }
       init_pose_loaded_ = true;
     }
 
@@ -1082,10 +1095,29 @@ void RobotisController::process()
     }
     else if (gazebo_mode_ == true)
     {
-      for (auto module_it = motion_modules_.begin(); module_it != motion_modules_.end(); module_it++)
+      queue_mutex_.lock();
+
+      for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
       {
-        if ((*module_it)->getModuleEnable() == false)
-          continue;
+        auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
+        if (d_it != robot_->dxls_.end())
+        {
+//          ROS_INFO("joint_name : %s", ((*j)->getName()).c_str());
+//          ROS_INFO("present_position : %f", ((*j)->getPosition()));
+//          ROS_INFO("present_velocity : %f", ((*j)->getVelocity()));
+
+          d_it->second->dxl_state_->present_position_   = (*j)->getPosition();
+          d_it->second->dxl_state_->present_velocity_   = (*j)->getVelocity();
+          d_it->second->dxl_state_->present_torque_     = (*j)->getEffort();
+        }
+      }
+
+      queue_mutex_.unlock();
+
+//      for (auto module_it = motion_modules_.begin(); module_it != motion_modules_.end(); module_it++)
+//      {
+//        if ((*module_it)->getModuleEnable() == false)
+//          continue;
 
 //        std_msgs::Float64 joint_msg;
 
@@ -1116,21 +1148,12 @@ void RobotisController::process()
 //        }
 
 //        ROS_INFO("joints_size : %d", (int) joints_.size());
-        for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
-        {
-          auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
-          if (d_it != robot_->dxls_.end())
-          {
-//            ROS_INFO("%s", ((*j)->getName()).c_str());
-            d_it->second->dxl_state_->present_position_ = (*j)->getPosition();
-            d_it->second->dxl_state_->present_velocity_ = (*j)->getVelocity();
-            d_it->second->dxl_state_->present_torque_ = (*j)->getEffort();
-          }
-        }
+
+
 
 //        for (size_t i = 0; i < joints_.size(); ++i)
 //          ROS_INFO("%s : %f", (joints_[i]->getName()).c_str(), joints_[i]->getPosition());
-      }
+//      }
     }
   }
   else if (controller_mode_ == DirectControlMode)
@@ -1269,7 +1292,13 @@ void RobotisController::process()
 
             if ((*module_it)->getControlMode() == PositionControl)
             {
-              dxl_state->goal_position_ = result_state->goal_position_;
+              dxl_state->goal_position_   = result_state->goal_position_;
+              dxl_state->goal_velocity_   = result_state->goal_velocity_;
+              dxl_state->goal_torque_     = result_state->goal_torque_;
+
+//              ROS_INFO("joint_name : %s", joint_name.c_str());
+//              ROS_INFO("goal position : %f", dxl_state->goal_position_);
+//              ROS_INFO("goal velocity : %f", dxl_state->goal_velocity_);
 
               if (gazebo_mode_ == false)
               {
@@ -1329,7 +1358,9 @@ void RobotisController::process()
             }
             else if ((*module_it)->getControlMode() == VelocityControl)
             {
-              dxl_state->goal_velocity_ = result_state->goal_velocity_;
+              dxl_state->goal_position_   = result_state->goal_position_;
+              dxl_state->goal_velocity_   = result_state->goal_velocity_;
+              dxl_state->goal_torque_     = result_state->goal_torque_;
 
               if (gazebo_mode_ == false)
               {
@@ -1388,7 +1419,9 @@ void RobotisController::process()
             }
             else if ((*module_it)->getControlMode() == TorqueControl)
             {
-              dxl_state->goal_torque_ = result_state->goal_torque_;
+              dxl_state->goal_position_   = result_state->goal_position_;
+              dxl_state->goal_velocity_   = result_state->goal_velocity_;
+              dxl_state->goal_torque_     = result_state->goal_torque_;
 
               if (gazebo_mode_ == false)
               {
@@ -2456,8 +2489,16 @@ bool RobotisController::addJointHandle(JointHandlePtr& j)
   // TODO: check for duplicate names?
   joints_.push_back(j);
 
-//  ROS_INFO("joints_size : %d", (int) joints_.size());
-//  ROS_INFO("%s", (j->getName()).c_str());
+//  auto d_it = robot_->dxls_.find((std::string) (j)->getName());
+//  if (d_it != robot_->dxls_.end())
+//  {
+//    d_it->second->dxl_state_->goal_position_  = 0.0;
+//    d_it->second->dxl_state_->goal_velocity_  = 0.0;
+//    d_it->second->dxl_state_->goal_torque_    = 0.0;
+//  }
+
+  ROS_INFO("joints_size : %d", (int) joints_.size());
+  ROS_INFO("%s", (j->getName()).c_str());
 //  ROS_INFO("%s : %f", (j->getName()).c_str(), j->getPosition());
 
   return true;
@@ -2482,13 +2523,32 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 //  }
 
   // Write goal value
+  queue_mutex_.lock();
+
   for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
   {
     auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
     if (d_it != robot_->dxls_.end())
     {
+//      ROS_INFO("1");
+
       (*j)->reset();
-      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
+      (*j)->setPosition(d_it->second->dxl_state_->goal_position_,
+                        d_it->second->dxl_state_->goal_velocity_,
+                        d_it->second->dxl_state_->goal_torque_);
+
+//      ROS_INFO("[Controller] joint handle name : %s", ((*j)->getName()).c_str() );
+//      ROS_INFO("[Controller] joint name : %s", (d_it->first).c_str() );
+
+//      ROS_INFO("[Controller] goal position : %f", d_it->second->dxl_state_->goal_position_);
+//      ROS_INFO("[Controller] present position : %f", d_it->second->dxl_state_->present_position_);
+//      ROS_INFO("v : %f", d_it->second->dxl_state_->goal_velocity_);
+
+//      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
     }
   }
+
+  queue_mutex_.unlock();
+
 }
+
