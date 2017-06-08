@@ -721,10 +721,10 @@ void RobotisController::startTimer()
 //          d_it->second->dxl_state_->present_velocity_   = (*j)->getVelocity();
 //          d_it->second->dxl_state_->present_torque_     = (*j)->getEffort();
 
-          ROS_INFO("%s", ((*j)->getName()).c_str());
-          ROS_INFO("present_position_ : %f" , (*j)->getPosition());
-          ROS_INFO("present_velocity_ : %f" , (*j)->getVelocity());
-          ROS_INFO("present_torque_ : %f"   , (*j)->getEffort());
+//          ROS_INFO("%s", ((*j)->getName()).c_str());
+//          ROS_INFO("present_position_ : %f" , (*j)->getPosition());
+//          ROS_INFO("present_velocity_ : %f" , (*j)->getVelocity());
+//          ROS_INFO("present_torque_ : %f"   , (*j)->getEffort());
         }
       }
 
@@ -2527,24 +2527,32 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 
   for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
   {
-    auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
-    if (d_it != robot_->dxls_.end())
+    if ((*j)->getName() == "l_leg_ft" || (*j)->getName() == "r_leg_ft")
     {
-//      ROS_INFO("1");
-
       (*j)->reset();
-      (*j)->setPosition(d_it->second->dxl_state_->goal_position_,
-                        d_it->second->dxl_state_->goal_velocity_,
-                        d_it->second->dxl_state_->goal_torque_);
+      (*j)->setPosition(0.0,0.0,0.0);
+    }
+    else
+    {
+      auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
+      if (d_it != robot_->dxls_.end())
+      {
+        //      ROS_INFO("1");
 
-//      ROS_INFO("[Controller] joint handle name : %s", ((*j)->getName()).c_str() );
-//      ROS_INFO("[Controller] joint name : %s", (d_it->first).c_str() );
+        (*j)->reset();
+        (*j)->setPosition(d_it->second->dxl_state_->goal_position_,
+                          d_it->second->dxl_state_->goal_velocity_,
+                          d_it->second->dxl_state_->goal_torque_);
 
-//      ROS_INFO("[Controller] goal position : %f", d_it->second->dxl_state_->goal_position_);
-//      ROS_INFO("[Controller] present position : %f", d_it->second->dxl_state_->present_position_);
-//      ROS_INFO("v : %f", d_it->second->dxl_state_->goal_velocity_);
+        //      ROS_INFO("[Controller] joint handle name : %s", ((*j)->getName()).c_str() );
+        //      ROS_INFO("[Controller] joint name : %s", (d_it->first).c_str() );
 
-//      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
+        //      ROS_INFO("[Controller] goal position : %f", d_it->second->dxl_state_->goal_position_);
+        //      ROS_INFO("[Controller] present position : %f", d_it->second->dxl_state_->present_position_);
+        //      ROS_INFO("v : %f", d_it->second->dxl_state_->goal_velocity_);
+
+        //      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
+      }
     }
   }
 
