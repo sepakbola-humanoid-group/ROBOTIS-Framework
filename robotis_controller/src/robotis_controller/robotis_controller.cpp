@@ -2527,13 +2527,13 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 
   for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
   {
-    if ((*j)->getName() == "l_leg_ft" || (*j)->getName() == "r_leg_ft")
-    {
-      (*j)->reset();
-      (*j)->setPosition(0.0,0.0,0.0);
-    }
-    else
-    {
+//    if ((*j)->getName() == "l_leg_ft" || (*j)->getName() == "r_leg_ft")
+//    {
+//      (*j)->reset();
+//      (*j)->setPosition(0.0,0.0,0.0);
+//    }
+//    else
+//    {
       auto d_it = robot_->dxls_.find((std::string) (*j)->getName());
       if (d_it != robot_->dxls_.end())
       {
@@ -2553,7 +2553,7 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 
         //      (*j)->setEffort(d_it->second->dxl_state_->goal_torque_);
       }
-    }
+//    }
   }
 
   queue_mutex_.unlock();
