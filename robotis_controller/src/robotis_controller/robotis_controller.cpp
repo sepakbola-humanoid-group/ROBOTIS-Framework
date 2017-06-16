@@ -1095,7 +1095,7 @@ void RobotisController::process()
     }
     else if (gazebo_mode_ == true)
     {
-      queue_mutex_.lock();
+//      queue_mutex_.lock();
 
       for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
       {
@@ -1112,7 +1112,7 @@ void RobotisController::process()
         }
       }
 
-      queue_mutex_.unlock();
+//      queue_mutex_.unlock();
 
 //      for (auto module_it = motion_modules_.begin(); module_it != motion_modules_.end(); module_it++)
 //      {
@@ -2523,7 +2523,7 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 //  }
 
   // Write goal value
-  queue_mutex_.lock();
+//  queue_mutex_.lock();
 
   for (JointHandleList::iterator j = joints_.begin(); j != joints_.end(); j++)
   {
@@ -2556,7 +2556,7 @@ void RobotisController::update(const ros::Time& time, const ros::Duration& dt)
 //    }
   }
 
-  queue_mutex_.unlock();
+//  queue_mutex_.unlock();
 
 }
 
