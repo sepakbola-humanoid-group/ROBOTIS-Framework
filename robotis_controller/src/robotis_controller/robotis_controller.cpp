@@ -45,7 +45,11 @@ RobotisController::RobotisController()
     DEBUG_PRINT(false),
     robot_(0),
     gazebo_mode_(false),
-    gazebo_robot_name_("robotis")
+    gazebo_robot_name_("robotis"),
+    old_present_value_(0.0),
+    new_present_value_(0.0),
+    old_goal_value_(0.0),
+    new_goal_value_(0.0)
 {
   direct_sync_write_.clear();
 }
@@ -1109,8 +1113,22 @@ void RobotisController::process()
           d_it->second->dxl_state_->present_position_   = (*j)->getPosition();
           d_it->second->dxl_state_->present_velocity_   = (*j)->getVelocity();
           d_it->second->dxl_state_->present_torque_     = (*j)->getEffort();
+
+//          if ((*j)->getName() == "l_ank_roll")
+//          {
+//            new_present_value_ = d_it->second->dxl_state_->present_position_;
+//            new_goal_value_ = d_it->second->dxl_state_->goal_position_;
+//          }
         }
       }
+//      double error = fabs(old_present_value_ - new_present_value_);
+//      double goal_error = fabs(old_goal_value_ - new_goal_value_);
+
+//      if (error < 0.00001 && goal_error != 0.0)
+//      {
+//        ROS_INFO("error : %f", error);
+//        ROS_INFO("goal_error : %f", goal_error);
+//      }
 
 //      queue_mutex_.unlock();
 
@@ -1476,6 +1494,9 @@ void RobotisController::process()
   }
 
   is_process_running = false;
+
+  old_present_value_ = new_present_value_;
+  old_goal_value_ = new_goal_value_;
 }
 
 void RobotisController::addMotionModule(MotionModule *module)

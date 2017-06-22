@@ -93,6 +93,12 @@ private:
   /* ROS plugin */
   JointHandleList   joints_;
 
+  // TEST CODE
+  double old_present_value_;
+  double new_present_value_;
+  double old_goal_value_;
+  double new_goal_value_;
+
 public:
   bool              DEBUG_PRINT;
   Robot            *robot_;
