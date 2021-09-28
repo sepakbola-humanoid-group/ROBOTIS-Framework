@@ -39,7 +39,8 @@ RobotisController::RobotisController()
     DEBUG_PRINT(false),
     robot_(0),
     gazebo_mode_(false),
-    gazebo_robot_name_("robotis")
+    gazebo_robot_name_("robotis"),
+    webot_mode_(false)
 {
   direct_sync_write_.clear();
 }
@@ -667,15 +668,18 @@ void RobotisController::msgQueueThread()
 
   if (gazebo_mode_ == true)
   {
-    for (auto& it : robot_->dxls_)
-    {
-      gazebo_joint_position_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_position/command", 1);
-      gazebo_joint_velocity_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_velocity/command", 1);
-      gazebo_joint_effort_pub_[it.first]   = ros_node.advertise<std_msgs::Float64>(
-                                                "/" + gazebo_robot_name_ + "/" + it.first + "_effort/command", 1);
-    }
+      for (auto& it : robot_->dxls_)
+      {
+        gazebo_joint_position_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
+                                                  "/" + gazebo_robot_name_ + "/" + it.first + "_position/command", 1);
+        gazebo_joint_velocity_pub_[it.first] = ros_node.advertise<std_msgs::Float64>(
+                                                  "/" + gazebo_robot_name_ + "/" + it.first + "_velocity/command", 1);
+        gazebo_joint_effort_pub_[it.first]   = ros_node.advertise<std_msgs::Float64>(
+                                                  "/" + gazebo_robot_name_ + "/" + it.first + "_effort/command", 1);
+      }
+      if (webot_mode_ == true)
+        webot_joint_position_pub_ = ros_node.advertise<bitbots_msgs::JointCommand>(
+                                                   "/" + gazebo_robot_name_ + "/DynamixelController/command", 1);
   }
 
   /* service */
@@ -1130,13 +1134,13 @@ void RobotisController::process()
     else if (gazebo_mode_ == true)
     {
       std_msgs::Float64 joint_msg;
-
+      bitbots_msgs::JointCommand webot_joint_msg_;
       for (auto& dxl_it : robot_->dxls_)
       {
         std::string     joint_name  = dxl_it.first;
         Dynamixel      *dxl         = dxl_it.second;
         DynamixelState *dxl_state   = dxl_it.second->dxl_state_;
-        
+
         if (dxl->ctrl_module_name_ == "none")
         {
           joint_msg.data = dxl_state->goal_position_;
@@ -1154,6 +1158,9 @@ void RobotisController::process()
           std::string     joint_name  = dxl_it.first;
           Dynamixel      *dxl         = dxl_it.second;
           DynamixelState *dxl_state   = dxl_it.second->dxl_state_;
+
+          webot_joint_msg_.joint_names.push_back(joint_name);        
+          webot_joint_msg_.positions.push_back(dxl_state->goal_position_);
 
           if (dxl->ctrl_module_name_ == (*module_it)->getModuleName())
           {
@@ -1174,6 +1181,8 @@ void RobotisController::process()
             }
           }
         }
+        if ((*module_it)->getControlMode() == PositionControl && webot_mode_ == true)
+          webot_joint_position_pub_.publish(webot_joint_msg_);
       }
     }
   }
@@ -2281,10 +2290,13 @@ void RobotisController::gazeboJointStatesCallback(const sensor_msgs::JointState:
   for (unsigned int i = 0; i < msg->name.size(); i++)
   {
     auto d_it = robot_->dxls_.find((std::string) msg->name[i]);
+    
     if (d_it != robot_->dxls_.end())
     {
+      
       d_it->second->dxl_state_->present_position_ = msg->position[i];
-      d_it->second->dxl_state_->present_velocity_ = msg->velocity[i];
+      if (webot_mode_ == false)
+        d_it->second->dxl_state_->present_velocity_ = msg->velocity[i];
       d_it->second->dxl_state_->present_torque_ = msg->effort[i];
     }
   }

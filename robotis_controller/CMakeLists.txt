@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   robotis_controller_msgs
+  bitbots_msgs
   dynamixel_sdk
   robotis_device
   robotis_framework_common
@@ -60,7 +61,7 @@ endif(NOT ${YAML_CPP_VERSION} VERSION_LESS "0.5")
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES robotis_controller
-  CATKIN_DEPENDS roscpp roslib std_msgs sensor_msgs robotis_controller_msgs dynamixel_sdk robotis_device robotis_framework_common cmake_modules
+  CATKIN_DEPENDS roscpp roslib std_msgs sensor_msgs robotis_controller_msgs bitbots_msgs dynamixel_sdk robotis_device robotis_framework_common cmake_modules
   DEPENDS Boost
 )
 

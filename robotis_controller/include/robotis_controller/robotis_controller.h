@@ -47,6 +47,8 @@
 #include "dynamixel_sdk/group_bulk_read.h"
 #include "dynamixel_sdk/group_sync_write.h"
 
+#include "bitbots_msgs/JointCommand.h"
+
 namespace robotis_framework
 {
 
@@ -92,6 +94,7 @@ public:
   Robot            *robot_;
 
   bool              gazebo_mode_;
+  bool              webot_mode_;
   std::string       gazebo_robot_name_;
 
   /* bulk read */
@@ -116,6 +119,7 @@ public:
   std::map<std::string, ros::Publisher> gazebo_joint_position_pub_;
   std::map<std::string, ros::Publisher> gazebo_joint_velocity_pub_;
   std::map<std::string, ros::Publisher> gazebo_joint_effort_pub_;
+  ros::Publisher webot_joint_position_pub_;
 
   static void *timerThread(void *param);
 
